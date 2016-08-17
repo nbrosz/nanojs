@@ -1,10 +1,13 @@
 var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image, sprite atlas, framerate, anti-alias?, game scale
-		var N=this,gl,lf,
+		var N=this,gl,lf,meh,oc,
 		gm=new gc(N),//instantiate game
 		cv=document.getElementById(id),//canvas
 		cx=cv.getContext("2d"),//context
+		ael=function(tg,eh,fu){tg.addEventListener(eh,fu);},//shorthand
+		dc=document,
 		pf=1e3/fr,//ms per frame
-		_ai=new Image();//atlas image
+		_ai=new Image(),//atlas image
+		lk=1;//user is locked to control game
 		_ai.src=aisrc;//set atlas image src
 		_ai.onload=function(){//once atlas image is loaded, assign it to engine
 			N._ai=spa&&_ai;//if there is no atlas data, don't complete image load
@@ -16,11 +19,14 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 		N.GS=gs;//game scale
 		N.cc=0xfff;//canvas color
 		N._ct=new Date();//current time
+
+		// sprite drawing
 		N.spl=[];//sprite list
 		N._Dsp=function(dt){//draw sprite list: deltatime
 			if(!N._ai||!spa)return;
 			cx.fillStyle=N.cc;
 			cx.fillRect(0,0,N.CW,N.CH); // clear
+			cx.save();//preserve default scale/translation values
 			for(var si in N.spl){
 				var s=N.spl[si],//current sprite
 				ss=s.S[s.a],//spritesheet for current sprite animation
@@ -32,17 +38,13 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 				sy=~~(s.y*gs),//sprite y position
 				sw=a[3]*gs,//sprite width
 				sh=a[4]*gs,//sprite height
-				csx=s.fx?-1:1,//canvas scale x
-				csy=s.fy?-1:1,//canvas scale y
-				tx=s.fx?N.CW:0,//canvas translate x
-				ty=s.fy?N.CH:0;//canvas translate y
 				sx=s.fx?N.CW-sx-sw:sx;
 				sy=s.fy?N.CH-sy-sh:sy;
-				cx.save();
-				cx.translate(tx,ty);
-				cx.scale(csx,csy);
+				//translate and scale during flipping so sprites end up in the same spot
+				cx.translate(s.fx?N.CW:0,s.fy?N.CH:0);
+				cx.scale(s.fx?-1:1,s.fy?-1:1);
 				cx.drawImage(N._ai,a[0]+xo,a[1]+yo,a[3],a[4],sx,sy,sw,sh);//draw sprite
-				cx.restore();
+				cx.restore();//restore default scale/translation values
 				if(s._ft>=0){//as long as the sprite isn't paused
 					s._ft+=dt;//add deltatime to frame timer
 					var fl=pf*ss[1];//the expected total frame length (how many ms should pass before next frame)
@@ -58,6 +60,50 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 				}
 			}
 		};
+
+		//input
+		N.ko={};//object holding key states (2 - pressed, 1 - held, 0 - released, nothing - not held)
+		N.mo={x:0,y:0};//object holding moues state
+		ael(dc,"keydown",function(e){//only use keypress event -- rely on key state object for details
+			if(!lk)return;//only control if canvas is selected
+			e.preventDefault();//prevents any unwanted key behavior, such as scrolling with arrow keys
+			N.ko[e.keyCode]=2;//set key state to "down"
+		});
+		ael(dc,"keyup",function(e){//only use keypress event -- rely on key state object for details
+			N.ko[e.keyCode]=0;//set key steate to "up"
+		});
+		oc=function(e){return e.target==cv;}//check if target is on the canvas
+		ael(dc,"click",function(e){
+			lk=oc(e);//lock when clicked
+		});
+		meh=function(e){//shared mouse event updater
+			if(oc(e)){
+				var b=e.buttons,m=N.mo;
+				m.l=b&1;//left
+				m.m=b&4;//middle
+				m.r=b&2;//right
+			}
+		}
+		//update mouse button states for up and down
+		ael(cv,"mousedown",meh);
+		ael(cv,"mouseup",meh);
+		ael(cv,"mousemove",function(e){
+			if(oc(e)){//get mouse x and y
+				N.mo.x=e.offsetX;
+				N.mo.y=e.offsetY;
+			}
+		});
+		ael(cv,"contextmenu",function(e){
+			if(oc(e))e.preventDefault();//prevent right-click context menu on canvas
+		});
+		N._Ui=function(){//update input states (reduce from pressed to held and from released to not pressed)
+			var i,o=N.ko;
+			for(i in o){
+				if(o[i])o[i]=1; //set key state to held
+				else delete o[i]; //set key state to not pressed
+			}
+		};
+
 		N.R=1;//game is running
 		lf=requestAnimationFrame||function(c){setTimeout(c,pf);};//use requestAnimationFrame with fallback
 		gl=function(){//game loop function
@@ -65,6 +111,7 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 			dt=nd-N._ct;//calculate deltatime (ms)
 			gm.Ud(dt);//call game update
 			N._Dsp(dt);//draw sprites
+			N._Ui();//update key states
 			N._ct=nd;//old time becomes new time
 			if(N.R)lf(gl);//loop as long as game is still running
 		};
@@ -77,14 +124,19 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 			I.fx=!!fx;//flip x?
 			I.fy=!!fy;//flip y?
 			I.S=s||[[0,6,[0,-1]]];//animation spritesheet (atlas index, framerate, frames)
-			I.Sf=function(a,f,p){I.a=a;I.f=f||0;I._ft=p?-1:0;};//Set Frame: set current anim/frame and reset timer, p=start paused
+			I.Pa=function(a,f,r){//Play anim: set current anim/frame, r=force reset frame timer
+				a=a||0;
+				I.f=f||I.f||0;
+				if(a!=I.a||r){I._ft=0;I.f=f||0;}
+				I.a=a;
+			};
 			I.Ta=function(){I._ft=I._ft<0?0:-1;};//Toggle Animation: switches between playing and stopped
 			I.Sz=function(){//get sprite size
 				if(!N._ai)return [0,0];//safety
 				var sa=N.SPA[I.S[I.a][0]];//sprite atlas for the current animation
 				return [sa[3]*N.GS,sa[4]*N.GS];//return width,height of current sprite, scaled
 			};
-			I.Sf(0);//initialize to 0
+			I.Pa(a,f);
 			N.spl.push(I);
 		}
 		N.Go=function(x,y,s,a,f,fx,fy){//gameobject
@@ -108,3 +160,11 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 //   [0,6,[0,1,2,3]],//atlas index, ticks per frame, frames indexes in animation
 //	 [1,6,[0,1,3,2,-1]]//animations ending in -1 will not loop
 // ]
+
+// Sample Keycodes:
+// W - 87
+// A - 65
+// S - 83
+// D - 68
+// Shift - 16
+// Space - 32
