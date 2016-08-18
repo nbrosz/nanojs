@@ -1,4 +1,5 @@
-var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image, sprite atlas, framerate, anti-alias?, game scale
+//canvas id, width, height, game class, sprite atlas image, sprite atlas, framerate, anti-alias?, game scale
+var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 		var N=this,gl,lf,meh,oc,
 		gm=new gc(N),//instantiate game
 		cv=document.getElementById(id),//canvas
@@ -12,8 +13,8 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 		_ai.onload=function(){//once atlas image is loaded, assign it to engine
 			N._ai=spa&&_ai;//if there is no atlas data, don't complete image load
 		};
-		N.CW=cv.width;//canvas width
-		N.CH=cv.height;//canvas height
+		N.CW=cv.width=cw*gs;//canvas width
+		N.CH=cv.height=ch*gs;//canvas height
 		N.SPA=spa;//sprite atlas
 		N.GS=gs;//game scale
 		N.cc=0xfff;//canvas (background) color
