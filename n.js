@@ -15,10 +15,10 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 		N.CW=cv.width;//canvas width
 		N.CH=cv.height;//canvas height
 		N.SPA=spa;//sprite atlas
-		cx.imageSmoothingEnabled=!!aa;//set anti-aliasing
 		N.GS=gs;//game scale
-		N.cc=0xfff;//canvas color
+		N.cc=0xfff;//canvas (background) color
 		N._ct=new Date();//current time
+		cx.imageSmoothingEnabled=!!aa;//set anti-aliasing
 
 		// sprite drawing
 		N.spl=[];//sprite list
@@ -34,12 +34,12 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 				i=ss[2][s.f],//index for the sprite's current frame
 				xo=(i%a[2])*a[3],//x-offset for the sprite's current frame
 				yo=(~~(i/a[2]))*a[4],//y-offset (floored) for the sprite's current frame
-				sw=a[3]*gs,//sprite width
-				sh=a[4]*gs,//sprite height
+				sw=a[3],//sprite width
+				sh=a[4],//sprite height
 				hsw=sw/2,//half sprite width
 				hsh=sh/2,//half sprite height
-				tsx=~~(s.x*gs+(s.co?0:hsw)),//temp sprite x position (floored)
-				tsy=~~(s.y*gs+(s.co?0:hsh)),//temp sprite y position (floored)
+				tsx=~~(s.x+(s.co?0:hsw)),//temp sprite x position (floored)
+				tsy=~~(s.y+(s.co?0:hsh)),//temp sprite y position (floored)
 				//rotation
 				d2r=Math.PI/180,//degrees to radians
 				ra=s.ng*d2r,//sprite rotation angle to radians
@@ -52,8 +52,8 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 				//translate and scale during flipping so sprites end up in the same spot
 				sx=s.fx?N.CW-sx-sw:sx;
 				sy=s.fy?N.CH-sy-sh:sy;
-				cx.translate(s.fx?N.CW:0,s.fy?N.CH:0);
-				cx.scale(s.fx?-1:1,s.fy?-1:1);
+				cx.translate(s.fx?N.CW*gs:0,s.fy?N.CH*gs:0);
+				cx.scale(s.fx?-gs:gs,s.fy?-gs:gs);
 				cx.drawImage(N._ai,a[0]+xo,a[1]+yo,a[3],a[4],sx,sy,sw,sh);//draw sprite
 				cx.restore();//restore default scale/translation values
 				if(s._ft>=0){//as long as the sprite isn't paused
