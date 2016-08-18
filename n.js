@@ -37,8 +37,8 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 				i=ss[2][s.f],//index for the sprite's current frame
 				xo=(i%a[2])*a[3],//x-offset for the sprite's current frame
 				yo=(~~(i/a[2]))*a[4],//y-offset (floored) for the sprite's current frame
-				sw=a[3],//sprite width
-				sh=a[4],//sprite height
+				sw=a[3]*s.sc,//sprite width
+				sh=a[4]*s.sc,//sprite height
 				hsw=sw/2,//half sprite width
 				hsh=sh/2,//half sprite height
 				tsx=~~(s.x+(s.co?0:hsw)),//temp sprite x position (floored)
@@ -136,7 +136,7 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 
 		//Classes
 		//sprite: x, y, width, height, spritesheet, current animation, current frame, center origin?, x-flip, y-flip
-		N.Sp=function(x,y,s,a,f,co,fx,fy){
+		N.Sp=function(x,y,s,a,f,co,sc,fx,fy){
 			var I=this;
 			I.x=x;//x position
 			I.y=y;//y position
@@ -144,6 +144,7 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 			I.fx=!!fx;//flip x?
 			I.fy=!!fy;//flip y?
 			I.ng=0;//rotation angle
+			I.sc=1;//individual sprite scale
 			I.S=s||[[0,6,[0,-1]]];//animation spritesheet (atlas index, framerate, frames)
 			I.Pa=function(a,f,r){//Play anim: set current anim/frame, r=force reset frame timer
 				a=a||0;
@@ -160,9 +161,9 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 			I.Pa(a,f);
 			N.spl.push(I);
 		}
-		N.Go=function(x,y,s,a,f,co,fx,fy){//gameobject
+		N.Go=function(x,y,s,a,f,co,sc,fx,fy){//gameobject
 			var I=this;
-			N.Sp.call(I, x,y,s,a,f,co,fx,fy);//inherit from sprite
+			N.Sp.call(I, x,y,s,a,f,co,sc,fx,fy);//inherit from sprite
 		}
 	};
 
