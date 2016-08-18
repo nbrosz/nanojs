@@ -34,13 +34,24 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 				i=ss[2][s.f],//index for the sprite's current frame
 				xo=(i%a[2])*a[3],//x-offset for the sprite's current frame
 				yo=(~~(i/a[2]))*a[4],//y-offset (floored) for the sprite's current frame
-				sx=~~(s.x*gs),//sprite x position
-				sy=~~(s.y*gs),//sprite y position
 				sw=a[3]*gs,//sprite width
 				sh=a[4]*gs,//sprite height
+				hsw=sw/2,//half sprite width
+				hsh=sh/2,//half sprite height
+				tsx=~~(s.x*gs+(s.co?0:hsw)),//temp sprite x position (floored)
+				tsy=~~(s.y*gs+(s.co?0:hsh)),//temp sprite y position (floored)
+				//rotation
+				d2r=Math.PI/180,//degrees to radians
+				ra=s.ng*d2r,//sprite rotation angle to radians
+				aco=Math.cos(-ra),//cos of angle to compensate for canvas x rotation
+				asi=Math.sin(-ra),//sin of angle to compensate for canvas y rotation
+				sx=tsx*aco-tsy*asi-hsw,//formula to compensate for canvas x rotation
+				sy=tsy*aco+tsx*asi-hsh;//formula to compensate for canvas y rotation
+				cx.rotate(ra);
+				//flipping
+				//translate and scale during flipping so sprites end up in the same spot
 				sx=s.fx?N.CW-sx-sw:sx;
 				sy=s.fy?N.CH-sy-sh:sy;
-				//translate and scale during flipping so sprites end up in the same spot
 				cx.translate(s.fx?N.CW:0,s.fy?N.CH:0);
 				cx.scale(s.fx?-1:1,s.fy?-1:1);
 				cx.drawImage(N._ai,a[0]+xo,a[1]+yo,a[3],a[4],sx,sy,sw,sh);//draw sprite
@@ -117,12 +128,15 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 		};
 
 		//Classes
-		N.Sp=function(x,y,s,a,f,fx,fy){//sprite: x, y, width, height, spritesheet, current animation, current frame, x-flip, y-flip
+		//sprite: x, y, width, height, spritesheet, current animation, current frame, center origin?, x-flip, y-flip
+		N.Sp=function(x,y,s,a,f,co,fx,fy){
 			var I=this;
 			I.x=x;//x position
 			I.y=y;//y position
+			I.co=co||0;//center origin -- origin will be top-left if false
 			I.fx=!!fx;//flip x?
 			I.fy=!!fy;//flip y?
+			I.ng=0;//rotation angle
 			I.S=s||[[0,6,[0,-1]]];//animation spritesheet (atlas index, framerate, frames)
 			I.Pa=function(a,f,r){//Play anim: set current anim/frame, r=force reset frame timer
 				a=a||0;
@@ -139,9 +153,9 @@ var Njs=function(id,gc,aisrc,spa,fr,aa,gs){//canvas id, game, sprite atlas image
 			I.Pa(a,f);
 			N.spl.push(I);
 		}
-		N.Go=function(x,y,s,a,f,fx,fy){//gameobject
+		N.Go=function(x,y,s,a,f,co,fx,fy){//gameobject
 			var I=this;
-			N.Sp.call(I, x,y,s,a,f,fx,fy);//inherit from sprite
+			N.Sp.call(I, x,y,s,a,f,co,fx,fy);//inherit from sprite
 		}
 
 		// finally, begin the game
