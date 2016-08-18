@@ -1,17 +1,18 @@
 //canvas id, width, height, game class, sprite atlas image, sprite atlas, framerate, anti-alias?, game scale
 var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
-		var N=this,gl,lf,meh,oc,
+		var N=this,gl,lf,meh,oc,rdy,
 		gm=new gc(N),//instantiate game
 		cv=document.getElementById(id),//canvas
 		cx=cv.getContext("2d"),//context
 		ael=function(tg,eh,fu){tg.addEventListener(eh,fu);},//shorthand
 		dc=document,
-		pf=1e3/fr,//ms per frame
 		_ai=new Image(),//atlas image
-		lk=1;//user is locked to control game
+		lk=1,//user is locked to control game
+		spfx="mageSmoothingEnabled";//prefix for smoothing property
 		_ai.src=aisrc;//set atlas image src
 		_ai.onload=function(){//once atlas image is loaded, assign it to engine
 			N._ai=spa&&_ai;//if there is no atlas data, don't complete image load
+			rdy();//begin the game once the atlas is loaded
 		};
 		N.CW=cv.width=cw*gs;//canvas width
 		N.CH=cv.height=ch*gs;//canvas height
@@ -19,7 +20,8 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 		N.GS=gs;//game scale
 		N.cc=0xfff;//canvas (background) color
 		N._ct=new Date();//current time
-		cx.imageSmoothingEnabled=!!aa;//set anti-aliasing
+		//set anti-aliasing
+		cx["msI"+spfx]=cx["mozI"+spfx]=cx["i"+spfx]=!!aa;
 
 		// sprite drawing
 		N.spl=[];//sprite list
@@ -59,7 +61,7 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 				cx.restore();//restore default scale/translation values
 				if(s._ft>=0){//as long as the sprite isn't paused
 					s._ft+=dt;//add deltatime to frame timer
-					var fl=pf*ss[1];//the expected total frame length (how many ms should pass before next frame)
+					var fl=1e3/ss[1];//the expected total frame length (how many ms should pass before next frame)
 					if(s._ft>fl){//if frame timer has advanced enough to move to the next frame...
 						var nf=(s.f+1)%ss[2].length;//get index of the next frame for the current animation
 						if(ss[2][nf]<0) {//if the next frame is a pause frame
@@ -117,7 +119,11 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 		};
 
 		N.R=1;//game is running
-		lf=requestAnimationFrame||function(c){setTimeout(c,pf);};//use requestAnimationFrame with fallback
+		rdy=function(){
+			gm.Ld();//call game load
+			gl();//begin game loop
+		};
+		lf=(fr>0&&requestAnimationFrame)||function(c){setTimeout(c,1e3/Math.abs(fr));};//use requestAnimationFrame with fallback
 		gl=function(){//game loop function
 			var nd=new Date(),//get new time
 			dt=nd-N._ct;//calculate deltatime (ms)
@@ -158,10 +164,6 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 			var I=this;
 			N.Sp.call(I, x,y,s,a,f,co,fx,fy);//inherit from sprite
 		}
-
-		// finally, begin the game
-		gm.Ld();//call game load
-		lf(gl);//begin game loop
 	};
 
 // Sprite Atlas example:
