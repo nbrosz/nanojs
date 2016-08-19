@@ -1,7 +1,6 @@
 //canvas id, width, height, game class, sprite atlas image, sprite atlas, framerate, anti-alias?, game scale
-var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
-		var N=this,gl,lf,meh,oc,rdy,
-		gm=new gc(N),//instantiate game
+var Njs=function(id,cw,ch,aisrc,spa,fr,aa,gs){
+		var N=this,gl,lf,meh,oc,rdy,gc
 		cv=document.getElementById(id),//canvas
 		cx=cv.getContext("2d"),//context
 		ael=function(tg,eh,fu){tg.addEventListener(eh,fu);},//shorthand
@@ -14,21 +13,17 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 			N._ai=spa&&_ai;//if there is no atlas data, don't complete image load
 			rdy();//begin the game once the atlas is loaded
 		};
-		N.CW=cv.width=cw*gs;//canvas width
-		N.CH=cv.height=ch*gs;//canvas height
-		N.SPA=spa;//sprite atlas
-		N.GS=gs;//game scale
-		N.cc=0xfff;//canvas (background) color
-		N._ct=new Date();//current time
-		//set anti-aliasing
-		cx["msI"+spfx]=cx["mozI"+spfx]=cx["i"+spfx]=!!aa;
+		
+		N.ste={};//game states
+
+		//instantiate game state class and signal readiness if engine is already loaded
+		N.Rn=function(k,c){gc=N.ste[k];if(N._ai)rdy();};
 
 		// sprite drawing
-		N.spl=[];//sprite list
 		N._Dsp=function(dt){//draw sprite list: deltatime
 			if(!N._ai||!spa)return;
 			cx.fillStyle=N.cc;
-			cx.fillRect(0,0,N.CW,N.CH); // clear
+			cx.fillRect(0,0,N.SCW,N.SCH); // clear
 			cx.save();//preserve default scale/translation values
 			for(var si in N.spl){
 				var s=N.spl[si],//current sprite
@@ -53,9 +48,9 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 				cx.rotate(ra);
 				//flipping
 				//translate and scale during flipping so sprites end up in the same spot
-				sx=s.fx?N.CW-sx-sw:sx;
-				sy=s.fy?N.CH-sy-sh:sy;
-				cx.translate(s.fx?N.CW*gs:0,s.fy?N.CH*gs:0);
+				sx=s.fx?N.SCW-sx-sw:sx;
+				sy=s.fy?N.SCH-sy-sh:sy;
+				cx.translate(s.fx?N.SCW*gs:0,s.fy?N.SCH*gs:0);
 				cx.scale(s.fx?-gs:gs,s.fy?-gs:gs);
 
 				cx.globalAlpha=s.al;//set alpha for sprite
@@ -63,7 +58,7 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 				cx.restore();//restore default scale/translation values
 				if(s._ft>=0){//as long as the sprite isn't paused
 					s._ft+=dt;//add deltatime to frame timer
-					var fl=1e3/ss[1];//the expected total frame length (how many ms should pass before next frame)
+					var fl=1/ss[1];//the expected total frame length (how many ms should pass before next frame)
 					if(s._ft>fl){//if frame timer has advanced enough to move to the next frame...
 						var nf=(s.f+1)%ss[2].length;//get index of the next frame for the current animation
 						if(ss[2][nf]<0) {//if the next frame is a pause frame
@@ -119,16 +114,31 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 				else delete o[i]; //set key state to not pressed
 			}
 		};
+		N.Ak=function(s){for(var ki in N.ko){if(N.ko[ki]==s)return ki;}return 0;}// return any key with the desired state
 
-		N.R=1;//game is running
 		rdy=function(){
+			if(!gc)return;
+			//restore engine to defaults
+			N.CW=cw;//canvas width
+			N.CH=ch;//canvas height
+			N.SCW=cv.width=cw*gs;//scaled canvas width
+			N.SCH=cv.height=ch*gs;//scaled canvas height
+			N.SPA=spa;//sprite atlas
+			N.GS=gs;//game scale
+			cx["msI"+spfx]=cx["mozI"+spfx]=cx["i"+spfx]=!!aa;//set anti-aliasing
+			N.cc=0xfff;//canvas (background) color
+			N.spl=[];//sprite list
+			N._ct=new Date();//current time
+			N.R=1;//game is running
+			//begin game
+			gm=new gc(N);//instantiate game
 			gm.Ld();//call game load
 			gl();//begin game loop
 		};
 		lf=(fr>0&&requestAnimationFrame)||function(c){setTimeout(c,1e3/Math.abs(fr));};//use requestAnimationFrame with fallback
 		gl=function(){//game loop function
 			var nd=new Date(),//get new time
-			dt=nd-N._ct;//calculate deltatime (ms)
+			dt=(nd-N._ct)/1e3;//calculate deltatime (s)
 			gm.Ud(dt);//call game update
 			N._Dsp(dt);//draw sprites
 			N._Ui();//update key states
@@ -137,7 +147,7 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 		};
 
 		//Classes
-		//sprite: x, y, width, height, spritesheet, current animation, current frame, center origin?, x-flip, y-flip
+		//sprite: x, y, spritesheet, current animation, current frame, center origin?, x-flip, y-flip
 		N.Sp=function(x,y,s,a,f,co,sc,fx,fy){
 			var I=this;
 			I.x=x;//x position
