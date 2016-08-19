@@ -57,6 +57,8 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 				sy=s.fy?N.CH-sy-sh:sy;
 				cx.translate(s.fx?N.CW*gs:0,s.fy?N.CH*gs:0);
 				cx.scale(s.fx?-gs:gs,s.fy?-gs:gs);
+
+				cx.globalAlpha=s.al;//set alpha for sprite
 				cx.drawImage(N._ai,a[0]+xo,a[1]+yo,a[3],a[4],sx,sy,sw,sh);//draw sprite
 				cx.restore();//restore default scale/translation values
 				if(s._ft>=0){//as long as the sprite isn't paused
@@ -145,6 +147,7 @@ var Njs=function(id,cw,ch,gc,aisrc,spa,fr,aa,gs){
 			I.fy=!!fy;//flip y?
 			I.ng=0;//rotation angle
 			I.sc=1;//individual sprite scale
+			I.al=1;//sprite alpha
 			I.S=s||[[0,6,[0,-1]]];//animation spritesheet (atlas index, framerate, frames)
 			I.Pa=function(a,f,r){//Play anim: set current anim/frame, r=force reset frame timer
 				a=a||0;
