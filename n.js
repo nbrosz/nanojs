@@ -30,8 +30,11 @@ var Njs=function(id,cw,ch,aisrc,spa,fr,aa,gs){
 				ss=s.S[s.a],//spritesheet for current sprite animation
 				a=spa[ss[0]],//atlas for the current spritesheet
 				i=ss[2][s.f],//index for the sprite's current frame
-				xo=(i%a[2])*a[3],//x-offset for the sprite's current frame
-				yo=(~~(i/a[2]))*a[4],//y-offset (floored) for the sprite's current frame
+				xi=i%a[2],//x-index for the sprite's current frame
+				yi=~~(i/a[2]),//y-index (floored) for the sprite's current frame
+				sp=a[5]||0,//sprite padding (0 if undefined)
+				xo=xi*(a[3]+sp),//x-offset for the sprite's current frame (including padding)
+				yo=yi*(a[4]+sp),//y-offset for the sprite's current frame (including padding)
 				sw=a[3]*s.sc,//sprite width
 				sh=a[4]*s.sc,//sprite height
 				hsw=sw/2,//half sprite width
@@ -182,7 +185,7 @@ var Njs=function(id,cw,ch,aisrc,spa,fr,aa,gs){
 
 // Sprite Atlas example:
 // [
-// 	 [0,0,4,16,16],//start x/y, row width(in # of sprites), sprite width/height
+// 	 [0,0,4,16,16,1],//start x/y, row width(in # of sprites), sprite width/height, sprite padding (optional)
 //	 [...]
 // ]
 
