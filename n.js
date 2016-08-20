@@ -59,7 +59,7 @@ var Njs=function(id,cw,ch,aisrc,spa,fr,aa,gs){
 				cx.globalAlpha=s.al;//set alpha for sprite
 				cx.drawImage(N._ai,a[0]+xo,a[1]+yo,a[3],a[4],sx,sy,sw,sh);//draw sprite
 				cx.restore();//restore default scale/translation values
-				if(s._ft>=0){//as long as the sprite isn't paused
+				if(s._ft>=0&&ss[1]){//as long as the sprite isn't paused and has a valid length
 					s._ft+=dt;//add deltatime to frame timer
 					var fl=1/ss[1];//the expected total frame length (how many ms should pass before next frame)
 					if(s._ft>fl){//if frame timer has advanced enough to move to the next frame...
