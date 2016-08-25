@@ -146,7 +146,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				if(!N._ai)return [0,0];//safety
 				var ta=N.Ta[ti];//texture atlas for the current gameobject
 				//sc=N.GS*I.sc;
-				return [ta[3]*I.sc,ta[4]*I.sc];//return width,height of current sprite, scaled
+				return [ta[3],ta[4]];//return width,height of current sprite, scaled
 			};
 			_Gol.push(I);
 		};
@@ -261,17 +261,8 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				}
 				return o;//invie overloading
 			};
-			I.Sz=function(){//get sprite size
-				var tsz=os(I.ti),//get size of tiles
-				w=tsz[0],h=tsz[1],//shorthand into width and height
-				ln=I.t.length;//text length shorthand
-				//return tile size multiplied by the width/height in tiles of the text element
-				return [I.mw?w*Math.min(ln,I.mw):w*ln,
-					I.mw?h*Math.ceil(ln/I.mw):h];
-			};
 			I.Drw=function(dt, df){//draw: deltatime, draw function
 				var i,x,y,
-				sc=N.GS*I.sc,//total scale
 				a=N.Ta[I.ti],//get texture atlas row
 				//shorthand
 				t=I.t,
@@ -292,10 +283,18 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 						y=~~(i/w);//increase to as many lines as necessary
 					}
 					//multiply indexes by offset amount
-					x*=a[3];//*sc;
-					y*=a[4];//*sc;
+					x*=a[3]*I.sc;
+					y*=a[4]*I.sc;
 					df(I.x+x,I.y+y,I.ti,t[i],{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});//draw characters
 				}
+			};
+			I.Sz=function(){//get sprite size
+				var tsz=os(I.ti),//get size of tiles
+				w=tsz[0],h=tsz[1],//shorthand into width and height
+				ln=I.t.length;//text length shorthand
+				//return tile size multiplied by the width/height in tiles of the text element
+				return [(I.mw?w*Math.min(ln,I.mw):w*ln)*I.sc,
+					(I.mw?h*Math.ceil(ln/I.mw):h)*I.sc];
 			};
 			I.Init(x,y,ti,t,o);//initialize
 		};
