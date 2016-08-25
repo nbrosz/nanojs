@@ -31,6 +31,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			N.SCW=cv.width=cw*gs;//scaled canvas width
 			N.SCH=cv.height=ch*gs;//scaled canvas height
 			N.GS=gs;//game scale
+			N.Ta=ta;//texture atlas
 			cx["msI"+spfx]=cx["mozI"+spfx]=cx["i"+spfx]=!!aa;//set anti-aliasing
 			N.cc=0xfff;//canvas (background) color
 			_Gol=[];//game object list
@@ -54,6 +55,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		//draw texture: x, y, atlas index, texture index, options
 		//options: sc - scale, al - alpha, ng - rotation angle, ox - offset x, oy - offset y, fx - flip x, fy - flip y
 		_Dtex=function(x,y,ai,ti,o){
+			cx.save();//preserve default scale/translation values
 			// set up optional parameter defaults
 			o=o||{};
 			o.sc=o.sc||1;
@@ -107,7 +109,6 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			if(!N._ai||!ta)return;
 			cx.fillStyle=N.cc;
 			cx.fillRect(0,0,N.SCW,N.SCH); // clear
-			cx.save();//preserve default scale/translation values
 			for(var goi in _Gol){
 				var go = _Gol[goi];
 				if (go.Drw)
@@ -160,8 +161,59 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		});
 		N.Ak=function(s){for(var ki in N.ko){if(N.ko[ki]==s)return ki;}return 0;}// return any key with the desired state
 
-		//Classes
-		//sprite: x, y, spritesheet, current animation
+		//Public Classes
+		//text: x, y, texture atlas index, text, options
+		//options: mw - max width (in characters, before line break), c - cipher string, al - alpha, sc - scale
+		N.Txt=function(x,y,a,t,o){
+			var I=this,cphr;
+			I.Init=function(x,y,a,t,o) {
+				o=o||{};
+				I.x=x;//x position
+				I.y=y;//y position
+				I.a=a;
+				I.t=t;
+				I.mw=o.mw||0;
+				I.al=o.al||1;
+				I.sc=o.sc||1;
+
+				if(o.c){
+					cphr={};//initialize cipher object
+					for(var i=0;i<o.c.length;i++){
+						cphr[o.c.charAt(i)]=i;//create mapping from character to index
+					}
+				}
+			};
+			I.Drw=function(dt, df){//draw: deltatime, draw function
+				var i,x,y,
+				sc=N.GS*I.sc,//total scale
+				a=ta[I.a],//get texture atlas row
+				//shorthand
+				t=I.t,
+				w=I.mw;
+				if(!Array.isArray(t)){//assume that if t isn't an array, it must be a valid string
+					t=[];//convert the string to an array using the cipher
+					for(i=0;i<I.t.length;i++){
+						t.push(cphr[I.t.charAt(i)]);//get number for character from cipher and push to array
+					}
+				}
+
+				for(i=0;i<t.length;i++){
+					x=i;
+					y=0;
+					if(w){//if a max width is defined
+						x=x%w;//limit to maximum width (in characters)
+						y=~~(i/w);//increase to as many lines as necessary
+					}
+					//multiply indexes by offset amount
+					x*=a[3];//*sc;
+					y*=a[4];//*sc;
+					df(I.x+x,I.y+y,I.a,t[i],{al:I.al,sc:I.sc});//draw characters
+				}
+			};
+			I.Init(x,y,a,t,o);//initialize
+			_Gol.push(I);
+		}
+		//sprite: x, y, spritesheet, current animation, options
 		//options: f=current frame, ox=origin offset x, oy=origin offset y, fx=x-flip, fy=y-flip
 		N.Spr=function(x,y,s,a,o){//a,f,co,sc,fx,fy
 			var I=this;
@@ -179,8 +231,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				I.S=s||[[0,0,[0]]];//animation spritesheet (atlas index, framerate, frames)
 			};
 			I.Drw=function(dt, df){//draw: deltatime, draw function
-				var a,i,
-				ss=I.S[I.a];//spritesheet for current animation
+				var ss=I.S[I.a];//spritesheet for current animation
 				df(I.x,I.y,ss[0],ss[2][I.f],
 					{sc:I.sc,al:I.al,ng:I.ng,ox:I.ox,oy:I.oy,fx:I.fx,fy:I.fy});
 			};
