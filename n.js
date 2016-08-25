@@ -162,15 +162,15 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 
 		//input
 		N.ko={};//object holding key states (2 - pressed, 1 - held, 0 - released, undefined - not held)
-		N.mo={x:0,y:0};//object holding moues state
-		ael(dc,"keydown",function(e){//only use keypress event -- rely on key state object for details
+		N.mo={x:0,y:0};//object holding mouse state
+		ael(dc,"keydown",function(e){
 			if(!_lk)return;//only control if canvas is selected
 			var k=e.keyCode;
 			if(k==32||k>36&&k<41)e.preventDefault();//prevents space/arrow key behavior
-			N.ko[k]=2;//set key state to "down"
+			N.ko[k]=N.ko[k]?1:2;//set key state to "down" if just pressed or "held" if not
 		});
-		ael(dc,"keyup",function(e){//only use keypress event -- rely on key state object for details
-			N.ko[e.keyCode]=0;//set key steate to "up"
+		ael(dc,"keyup",function(e){
+			N.ko[e.keyCode]=0;//set key state to "up"
 		});
 		ael(dc,"click",function(e){
 			_lk=oc(e);//lock when clicked
@@ -198,11 +198,14 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			oi=I.Init;//preserve reference to old init function
 			os=I.Sz;//preserve reference to old size function
 			I.Init=function(x,y,s,ti,o) {
-				o=oi(x,y,o);//call parent initializer
-				I.ti=ti;
-				I.S=s||[[0,0,[0]]];//animation spritesheet (atlas index, framerate, frames)
-				_ft=0;
-				return o;//invie overloading
+				I.Rst=function(){//preserve context of initialization in a convenient reset function
+					o=oi(x,y,o);//call parent initializer
+					I.ti=I.ti||ti;
+					I.S=I.S||s||[[0,0,[0]]];//animation spritesheet (atlas index, framerate, frames)
+					_ft=0;
+				};
+				I.Rst();//call reset function to initialize
+				return o;//invite overloading
 			};
 			I.Drw=function(dt, df){//draw: deltatime, draw function
 				var ss=I.S[I.ti];//spritesheet for current animation
