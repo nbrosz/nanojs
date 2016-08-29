@@ -1,6 +1,7 @@
 //canvas id, width, height, game class, texture atlas image, texture atlas, framerate, game scale, anti-alias?
 var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden members
 		var N=this,
+		__=undefined,//shorthand
 		gc,//current game class (prototype)
 		_Gol,//game object list
 		_Sl=[],//game states list
@@ -103,7 +104,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		_Ud=function(dt){
 			for(var goi in _Gol){
 				var go = _Gol[goi];
-				if (go.Ud)
+				if (go.Ud&&go.A())//if gameobject has update method and is active, call update
 					go.Ud(dt);// call update function on current game object: pass in deltatime
 			}
 		},
@@ -113,7 +114,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			cx.fillRect(0,0,N.SCW,N.SCH); // clear
 			for(var goi in _Gol){
 				var go = _Gol[goi];
-				if (go.Drw)
+				if (go.Drw&&go.A())//if gameobject has draw method and is active, call draw
 					go.Drw(dt,_Dtex);// call draw function on current game object: pass in deltatime/drawing function
 			}
 		},
@@ -126,9 +127,9 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		},
 		//Private Classes
 		//Gameobject (common base class): x, y, options
-		//options: f=current frame, ox=origin offset x, oy=origin offset y, fx=x-flip, fy=y-flip
+		//options: f=current frame, ox=origin offset x, oy=origin offset y, fx=x-flip, fy=y-flip, a=start activated
 		_Go=function(x,y,o){
-			var I=this;
+			var I=this,_a;
 			I.Init=function(x,y,o) {
 				o=o||{};
 				I.x=x;//x position
@@ -140,6 +141,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				I.ng=o.ng||0;//rotation angle
 				I.sc=o.sc||1;//scale
 				I.al=isNaN(o.al)?1:o.al;//sprite alpha
+				I.A(o.a!=__?o.a:1);//gameobject is active?
 				return o;//return options object for reuse
 			};
 			I.Sz=function(ti){//get gameobject size
@@ -148,6 +150,10 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				//sc=N.GS*I.sc;
 				return [ta[3],ta[4]];//return width,height of current sprite, scaled
 			};
+			I.A=function(a){//guard gameobject's active status
+				if(a!=__)_a=!!a;//assign if provided
+				return _a;
+			}
 			_Gol.push(I);
 		};
 
