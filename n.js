@@ -198,13 +198,11 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			oi=I.Init;//preserve reference to old init function
 			os=I.Sz;//preserve reference to old size function
 			I.Init=function(x,y,s,ti,o) {
-				I.Rst=function(){//preserve context of initialization in a convenient reset function
-					o=oi(x,y,o);//call parent initializer
-					I.ti=I.ti||ti;
-					I.S=I.S||s||[[0,0,[0]]];//animation spritesheet (atlas index, framerate, frames)
-					_ft=0;
-				};
-				I.Rst();//call reset function to initialize
+				o=oi(x,y,o);//call parent initializer
+				I.ti=ti;
+				I.S=s||[[0,0,[0]]];//animation spritesheet (atlas index, framerate, frames)
+				_ft=0;
+				I.Pa(ti,o.f);//set up animation
 				return o;//invite overloading
 			};
 			I.Drw=function(dt, df){//draw: deltatime, draw function
@@ -231,8 +229,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				}
 			};
 			I.Pa=function(ti,f,r){//Play anim: set current anim/frame, r=force reset frame timer
-				ti=ti||0;
-				I.f=f||I.f||0;
+				I.f=isNaN(f)?I.f||0:f;// f||I.f||0;
 				if(ti!=I.ti||r){_ft=0;I.f=f||0;}//reset timer if animation has changed or the reset is forced
 				I.ti=ti;
 			};
@@ -241,7 +238,6 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				return os(I.S[I.ti][0]);
 			};
 			I.Init(x,y,s,ti,o);//initialize
-			I.Pa(ti,o.f);//set up animation
 		};
 		//text: x, y, texture atlas index, text, options
 		//options: mw - max line width (in characters), c - cipher string, al - alpha, sc - scale
