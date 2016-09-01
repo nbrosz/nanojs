@@ -10,8 +10,9 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		cv=document.getElementById(id),//canvas
 		cx=cv.getContext("2d"),//context
 		dc=document,
-		_ai=new Image(),//atlas image
+		_ai=[],//atlas image array
 		_lk=1,//user is locked to control game
+		_lim=0,//number of loaded images
 		spfx="mageSmoothingEnabled",//prefix for smoothing property
 		//private functions
 		ael=function(tg,eh,fu){tg.addEventListener(eh,fu);},//add event listener shorthand
@@ -74,13 +75,13 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			x=~~x;
 			y=~~y;
 			var a=ta[ai],//current atlas row
-			xi=ti%a[2],//x-index for the texture's current frame
-			yi=~~(ti/a[2]),//y-index (floored) for the texture's current frame
-			sp=a[5]||0,//texture padding (0 if undefined)
-			xo=xi*(a[3]+sp),//x-offset for the texture's current frame (including padding)
-			yo=yi*(a[4]+sp),//y-offset for the texture's current frame (including padding)
-			tw=a[3]*o.sc,//texture width
-			th=a[4]*o.sc,//texture height
+			xi=ti%a[3],//x-index for the texture's current frame
+			yi=~~(ti/a[3]),//y-index (floored) for the texture's current frame
+			sp=a[6]||0,//texture padding (0 if undefined)
+			xo=xi*(a[4]+sp),//x-offset for the texture's current frame (including padding)
+			yo=yi*(a[5]+sp),//y-offset for the texture's current frame (including padding)
+			tw=a[4]*o.sc,//texture width
+			th=a[5]*o.sc,//texture height
 			ow=o.ow||tw,//overall width
 			oh=o.oh||th,//overall height
 
@@ -101,7 +102,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			cx.scale(o.fx?-gs:gs,o.fy?-gs:gs);
 
 			cx.globalAlpha=o.al;//set alpha for texture
-			cx.drawImage(N._ai,a[0]+xo,a[1]+yo,a[3],a[4],tx,ty,tw,th);//draw texture
+			cx.drawImage(_ai[a[0]],a[1]+xo,a[2]+yo,a[4],a[5],tx,ty,tw,th);//draw texture
 			cx.restore();//restore saved scale/translation values
 		},
 		_Ud=function(dt){
@@ -112,7 +113,6 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			}
 		},
 		_Drw=function(dt){//call draw functions: deltatime
-			if(!N._ai||!ta)return;
 			cx.fillStyle=N.cc;
 			cx.fillRect(0,0,N.SCW,N.SCH); // clear
 			for(var goi in _Gol){
@@ -148,10 +148,9 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 				return o;//return options object for reuse
 			};
 			I.Sz=function(ti){//get gameobject size
-				if(!N._ai)return [0,0];//safety
 				var ta=N.Ta[ti];//texture atlas for the current gameobject
 				//sc=N.GS*I.sc;
-				return [ta[3],ta[4]];//return width,height of current sprite, scaled
+				return [ta[4],ta[5]];//return width,height of current sprite, scaled
 			};
 			I.A=function(a){//guard gameobject's active status
 				if(a!=__)_a=!!a;//assign if provided
@@ -160,15 +159,23 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			_Gol.push(I);
 		};
 
-		_ai.src=aisrc;//set atlas image src
-		_ai.onload=function(){//once atlas image is loaded, assign it to engine
-			N._ai=ta&&_ai;//if there is no atlas data, don't complete image load
-			_Rdy();//begin the game once the atlas is loaded
-		};
+		//load images
+		for(var ii in aisrc) {
+			var img=new Image();
+			_ai.push(img);
+			img.src=aisrc[ii];//set atlas image src
+			img.onload=function(){//once atlas image is loaded, assign it to engine
+				//N._ai=ta&&_ai;//if there is no atlas data, don't complete image load
+				_lim++;
+				if(_lim==aisrc.length){
+					_Rdy();//begin the game once the atlas is loaded
+				}
+			};
+		}
 
 		//game states
 		N.As=function(s){return _Sl.push(s)-1;} //add game state and return state's index
-		N.Rn=function(k,c){gc=_Sl[k];if(N._ai)_Rdy();};//instantiate game state class and signal readiness if engine is already loaded
+		N.Rn=function(k,c){gc=_Sl[k];if(_lim)_Rdy();};//instantiate game state class and signal readiness if engine is already loaded
 
 		//object pool
 		_Gci=function(c){//get class index (and make sure it's valid)
@@ -190,7 +197,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			o._c=i;//assign the class's id to the object so it can be returned without hassle
 			return o;//finally return the object
 		};
-		N.Op=function(o, c){//Object Put: o - object to put, c - class of object (only necessary if not from pool)
+		N.Op=function(o){//Object Put: o - object to put
 			o.A(0);//deactive object
 			var p=_Gop,//shorthand
 			i=o._c;//get class id off object
@@ -319,8 +326,8 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 						y=~~(i/w);//increase to as many lines as necessary
 					}
 					//multiply indexes by offset amount
-					x*=a[3]*I.sc;
-					y*=a[4]*I.sc;
+					x*=a[4]*I.sc;
+					y*=a[5]*I.sc;
 					df(I.x+x,I.y+y,I.ti,t[i],{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});//draw characters
 				}
 			};
