@@ -4,6 +4,8 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		__=undefined,//shorthand
 		gc,//current game class (prototype)
 		_Gol,//game object list
+		_Gop,//game object pool
+		_Gci,//get class id
 		_Sl=[],//game states list
 		cv=document.getElementById(id),//canvas
 		cx=cv.getContext("2d"),//context
@@ -36,17 +38,18 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			cx["msI"+spfx]=cx["mozI"+spfx]=cx["i"+spfx]=!!aa;//set anti-aliasing
 			N.cc=0xfff;//canvas (background) color
 			_Gol=[];//game object list
+			_Gop={};//game object pool
 			N._ct=new Date();//current time
 			N.R=1;//game is running
 			//begin game
 			gm=new gc(N);//instantiate game
-			gm.Ld();//call game load
+			if(gm.Ld)gm.Ld();//call game load
 			_Gl();//begin game loop
 		},
 		_Gl=function(){//game loop function
 			var nd=new Date(),//get new time
 			dt=(nd-N._ct)/1e3;//calculate deltatime (s)
-			gm.Ud(dt);//call game update
+			if(gm.Ud)gm.Ud(dt);//call game update
 			_Ud(dt);//call game object update functions
 			_Drw(dt);//call game object draw functions
 			_Ui();//update key states
@@ -163,8 +166,36 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 			_Rdy();//begin the game once the atlas is loaded
 		};
 
+		//game states
 		N.As=function(s){return _Sl.push(s)-1;} //add game state and return state's index
 		N.Rn=function(k,c){gc=_Sl[k];if(N._ai)_Rdy();};//instantiate game state class and signal readiness if engine is already loaded
+
+		//object pool
+		_Gci=function(c){//get class index (and make sure it's valid)
+			var p=_Gop,i,n=c.name;
+			if(!p._m)p._m=[];//create array to match classes to an ID if none exists
+			i=p._m.indexOf(n);//get class id
+			if(i<0){i=p._m.length;p._m[i]=n;}//if class ID doesn't exist, add class and return id
+			if(!p[i])p[i]=[];//make sure index is safe for use
+			return i;
+		};
+		N.Og=function(c,pa){//Object Get: c - class to get, pa - parameter array
+			var a,o,
+			p=_Gop,//shorthand
+			i=_Gci(c);//get class index
+			a=p[i];//get array of objects for the class id (automatically created with _Gci())
+			//if(!a)a=p[i]=[];//if no array of that class type exists, create and return one
+			o=a.pop()||new c();//get next object or new object if none exists
+			o.Init.apply(o,pa);//call init function passing in parameter array
+			o._c=i;//assign the class's id to the object so it can be returned without hassle
+			return o;//finally return the object
+		};
+		N.Op=function(o, c){//Object Put: o - object to put, c - class of object (only necessary if not from pool)
+			o.A(0);//deactive object
+			var p=_Gop,//shorthand
+			i=o._c;//get class id off object
+			p[i].push(o);//put object back for reuse
+		};
 
 		//input
 		N.ko={};//object holding key states (2 - pressed, 1 - held, 0 - released, undefined - not held)
@@ -198,7 +229,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		//Public Classes
 		//sprite: x, y, spritesheet, current animation (texture atlas index), options
 		//options: f=current frame, ox=origin offset x, oy=origin offset y, fx=x-flip, fy=y-flip
-		N.Spr=function(x,y,s,ti,o){
+		N.Spr=function Spr(x,y,s,ti,o){
 			var I=this,oi,os,_ft;
 			_Go.call(I,x,y,o);//inherit from GameObject
 			oi=I.Init;//preserve reference to old init function
@@ -247,7 +278,7 @@ var Njs=function(id,cw,ch,aisrc,ta,fr,gs,aa){ //_ implies important hidden membe
 		};
 		//text: x, y, texture atlas index, text, options
 		//options: mw - max line width (in characters), c - cipher string, al - alpha, sc - scale
-		N.Txt=function(x,y,ti,t,o){
+		N.Txt=function Txt(x,y,ti,t,o){
 			var I=this,oi,os,cphr;
 			_Go.call(I,x,y,o);//inherit from GameObject
 			oi=I.Init;//preserve reference to old init function
