@@ -4,5 +4,3 @@ A tiny HTML5 game engine with bare-bones features, designed to be as light-weigh
 ## Usage
 
 ***TODO: complete documentation***
-
-*Commit Test*
