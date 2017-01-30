@@ -6,7 +6,7 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 		_gameObjectList,//game object list
 		_gameObjectPool,//game object pool
 		_nextClassId = 0,
-		_GetClassPool,//get class id
+		_getClassPool,//get class id
 		_sceneList=[],//game states list
 		canvas=document.getElementById(id),//canvas
 		canvasContext=canvas.getContext("2d"),//context
@@ -32,40 +32,40 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 				m.r=b&2;//right
 			}
 		},
-		_Ready=function(){
+		_ready=function(){
 			if(!gameScene) return;
 			//restore engine to defaults
-			N.CanvasWidth=canvasWidth;//canvas width
-			N.CanvasHeight=canvasHeight;//canvas height
-			N.ScaledCanvasWidth=canvas.width=canvasWidth*gameScale;//scaled canvas width
-			N.ScaledCanvasHeight=canvas.height=canvasHeight*gameScale;//scaled canvas height
-			N.GameScale=gameScale;//game scale
-			N.TextureAtlases=textureAtlases;//texture atlas
+			N.canvasWidth=canvasWidth;//canvas width
+			N.canvasHeight=canvasHeight;//canvas height
+			N.scaledCanvasWidth=canvas.width=canvasWidth*gameScale;//scaled canvas width
+			N.scaledCanvasHeight=canvas.height=canvasHeight*gameScale;//scaled canvas height
+			N.gameScale=gameScale;//game scale
+			N.textureAtlases=textureAtlases;//texture atlas
 			canvasContext["msI"+smoothingPostfix]=canvasContext["mozI"+smoothingPostfix]=canvasContext["i"+smoothingPostfix]=!!antiAliased;//set anti-aliasing
 			N.canvasColor=0xfff;//canvas (background) color
 			_gameObjectList=[];//game object list
 			_gameObjectPool={};//game object pool
 			N._currentTime=new Date();//current time
-			N.Running=1;//game is running
+			N.running=1;//game is running
 			//begin game
 			gameScene=new gameScene(N);//instantiate game scene
-			if(gameScene.Load)gameScene.Load();//call game load
-			_GameLoop();//begin game loop
+			if(gameScene.load)gameScene.load();//call game load
+			_gameLoop();//begin game loop
 		},
-		_GameLoop=function(){//game loop function
+		_gameLoop=function(){//game loop function
 			var latestTime=new Date(),//get new time
 			dt=(latestTime-N._currentTime)/1e3;//calculate deltatime (s)
-			if(gameScene.Update)gameScene.Update(dt);//call game update
-			_Update(dt);//call game object update functions
-			_Draw(dt);//call game object draw functions
-			_UpdateInput();//update key states
+			if(gameScene.update)gameScene.update(dt);//call game update
+			_update(dt);//call game object update functions
+			_draw(dt);//call game object draw functions
+			_updateInput();//update key states
 			N._currentTime=latestTime;//old time becomes new time
-			if(N.Running)
-				runNextFrame(_GameLoop);//loop as long as game is still running
+			if(N.running)
+				runNextFrame(_gameLoop);//loop as long as game is still running
 		},
 		//draw texture: x, y, atlas index, texture index, options
 		//options: sc - scale, al - alpha, ng - rotation angle, ox - offset x, oy - offset y, fx - flip x, fy - flip y, ow - overall width, oh - overall height
-		_DrawTexture=function(x,y,ai,ti,o){
+		_drawTexture=function(x,y,ai,ti,o){
 			canvasContext.save();//preserve default scale/translation values
 			// set up optional parameter defaults
 			o=o||{};
@@ -102,32 +102,32 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 
 			//flipping
 			//translate and scale during flipping so texture ends up in the same spot
-			tx=o.fx?N.ScaledCanvasWidth-tx-tw:tx;
-			ty=o.fy?N.ScaledCanvasHeight-ty-th:ty;
-			canvasContext.translate(o.fx?N.ScaledCanvasWidth*gameScale:0,o.fy?N.ScaledCanvasHeight*gameScale:0);
+			tx=o.fx?N.scaledCanvasWidth-tx-tw:tx;
+			ty=o.fy?N.scaledCanvasHeight-ty-th:ty;
+			canvasContext.translate(o.fx?N.scaledCanvasWidth*gameScale:0,o.fy?N.scaledCanvasHeight*gameScale:0);
 			canvasContext.scale(o.fx?-gameScale:gameScale,o.fy?-gameScale:gameScale);
 
 			canvasContext.globalAlpha=o.al;//set alpha for texture
 			canvasContext.drawImage(_atlasImages[a[0]],a[1]+xo,a[2]+yo,a[4],a[5],tx,ty,tw,th);//draw texture
 			canvasContext.restore();//restore saved scale/translation values
 		},
-		_Update=function(dt){
+		_update=function(dt){
 			for(var goi in _gameObjectList){
 				var go = _gameObjectList[goi];
-				if (go.Update&&go.Active())//if gameobject has update method and is active, call update
-					go.Update(dt);// call update function on current game object: pass in deltatime
+				if (go.update&&go.active())//if gameobject has update method and is active, call update
+					go.update(dt);// call update function on current game object: pass in deltatime
 			}
 		},
-		_Draw=function(dt){//call draw functions: deltatime
+		_draw=function(dt){//call draw functions: deltatime
 			canvasContext.fillStyle=N.canvasColor;
-			canvasContext.fillRect(0,0,N.ScaledCanvasWidth,N.ScaledCanvasHeight); // clear
+			canvasContext.fillRect(0,0,N.scaledCanvasWidth,N.scaledCanvasHeight); // clear
 			for(var goi in _gameObjectList){
 				var go = _gameObjectList[goi];
-				if (go.Draw&&go.Active())//if gameobject has draw method and is active, call draw
-					go.Draw(dt,_DrawTexture);// call draw function on current game object: pass in deltatime/drawing function
+				if (go.draw&&go.active())//if gameobject has draw method and is active, call draw
+					go.draw(dt,_drawTexture);// call draw function on current game object: pass in deltatime/drawing function
 			}
 		},
-		_UpdateInput=function(){//update input states (reduce from pressed to held and from released to not pressed)
+		_updateInput=function(){//update input states (reduce from pressed to held and from released to not pressed)
 			var i,o=N.keyStates;
 			for(i in o){
 				if(o[i])
@@ -141,7 +141,7 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 		//options: f=current frame, ox=origin offset x, oy=origin offset y, fx=x-flip, fy=y-flip, a=start activated
 		_Gameobject=function(x,y,o){
 			var I=this,_a;
-			I.Init=function(x,y,o) {
+			I.init=function(x,y,o) {
 				o=o||{};
 				I.x=x;//x position
 				I.y=y;//y position
@@ -152,15 +152,15 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 				I.ng=o.ng||0;//rotation angle
 				I.sc=o.sc||1;//scale
 				I.al=isNaN(o.al)?1:o.al;//sprite alpha
-				I.Active(o.a!=__?o.a:1);//gameobject is active?
+				I.active(o.a!=__?o.a:1);//gameobject is active?
 				return o;//return options object for reuse
 			};
-			I.Size=function(textureId){//get gameobject size
-				var currentAtlas=N.TextureAtlases[textureId];//texture atlas for the current gameobject
+			I.size=function(textureId){//get gameobject size
+				var currentAtlas=N.textureAtlases[textureId];//texture atlas for the current gameobject
 				//sc=N.GS*I.sc;
 				return [currentAtlas[4],currentAtlas[5]];//return width,height of current sprite, scaled
 			};
-			I.Active=function(a){//guard gameobject's active status
+			I.active=function(a){//guard gameobject's active status
 				if(a!=__)_a=!!a;//assign if provided
 				return _a;
 			}
@@ -176,38 +176,38 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 				//N._ai=ta&&_ai;//if there is no atlas data, don't complete image load
 				_loadedImages++;
 				if(_loadedImages==textureUrls.length){
-					_Ready();//begin the game once the atlas is loaded
+					_ready();//begin the game once the atlas is loaded
 				}
 			};
 		}
 
 		//game scenes
-		N.AddScene=function(scene){ //add game scenes and return scene's index
+		N.addScene=function(scene){ //add game scenes and return scene's index
 			return _sceneList.push(scene)-1;
 		} 
-		N.RunScene=function(sceneId){ //instantiate game scene and signal readiness if engine is already loaded
+		N.runScene=function(sceneId){ //instantiate game scene and signal readiness if engine is already loaded
 			gameScene=_sceneList[sceneId];
 			if(_loadedImages)
-				_Ready();
+				_ready();
 		};
 
 		//object pool
-		_GetClassPool=function(clss){//get class index (and make sure it's valid)
+		_getClassPool=function(clss){//get class index (and make sure it's valid)
 			var classId = clss.prototype.classId || (clss.prototype.classId = _nextClassId++), // get or add id to class prototype
 			classPools = _gameObjectPool || (_gameObjectPool = {});//create object to match classes to an ID if none exists
 			return classPools[classId] || (classPools[classId] = []); // create array of class objects if none exists
 		};
-		N.ObjectGet=function(classPrototype,constructorParameters){//Object Get: c - class to get, pa - parameter array
+		N.objectGet=function(classPrototype,constructorParameters){//Object Get: c - class to get, pa - parameter array
 			//var classId=,//get class index
-			var arr=_GetClassPool(classPrototype),//get array of objects for the class id (automatically created with _GetClassId())
+			var arr=_getClassPool(classPrototype),//get array of objects for the class id (automatically created with _GetClassId())
 			//if(!a)a=p[i]=[];//if no array of that class type exists, create and return one
 			returnObject=arr.pop()||new classPrototype();//get next object or new object if none exists
-			returnObject.Init.apply(returnObject,constructorParameters);//call init function passing in parameter array
+			returnObject.init.apply(returnObject,constructorParameters);//call init function passing in parameter array
 			returnObject._classId=classPrototype.prototype.classId;//assign the class's id to the object so it can be returned without hassle
 			return returnObject;//finally return the object
 		};
-		N.ObjectPut=function(obj){//Object Put: o - object to put
-			obj.Active(0);//deactivate object
+		N.objectPut=function(obj){//Object Put: o - object to put
+			obj.active(0);//deactivate object
 			_gameObjectPool[obj._classId].push(obj);//put object back for reuse
 		};
 
@@ -239,7 +239,7 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 			if(callbackTargetCanvas(e))
 				e.preventDefault();//prevent right-click context menu on canvas
 		});
-		N.AnyKey=function(s){for(var ki in N.keyStates){if(N.keyStates[ki]==s)return ki;}return 0;}// return any key with the desired state
+		N.getAnyKey=function(s){for(var ki in N.keyStates){if(N.keyStates[ki]==s)return ki;}return 0;}// return any key with the desired state
 
 		//Public Classes
 		//sprite: x, y, spritesheet, current animation (texture atlas index), options
@@ -247,22 +247,22 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 		N.Sprite=function Sprite(x,y,s,ti,o){
 			var I=this,oi,os,_ft;
 			_Gameobject.call(I,x,y,o);//inherit from GameObject
-			oi=I.Init;//preserve reference to old init function
-			os=I.Size;//preserve reference to old size function
-			I.Init=function(x,y,s,ti,o) {
+			oi=I.init;//preserve reference to old init function
+			os=I.size;//preserve reference to old size function
+			I.init=function(x,y,s,ti,o) {
 				o=oi(x,y,o);//call parent initializer
 				I.ti=ti;
 				I.Spritesheet=s||[[0,0,[0]]];//animation spritesheet (atlas index, framerate, frames)
 				_ft=0;
-				I.PlayAnimation(ti,o.f);//set up animation
+				I.playAnimation(ti,o.f);//set up animation
 				return o;//invite overloading
 			};
-			I.Draw=function(dt, df){//draw: deltatime, draw function
+			I.draw=function(dt, df){//draw: deltatime, draw function
 				var ss=I.Spritesheet[I.ti];//spritesheet for current animation
 				df(I.x,I.y,ss[0],ss[2][I.f],
 					{sc:I.sc,al:I.al,ng:I.ng,ox:I.ox,oy:I.oy,fx:I.fx,fy:I.fy});
 			};
-			I.Update=function(dt){//update: deltatime
+			I.update=function(dt){//update: deltatime
 				//progress sprite animations
 				var fl,nf,
 				ss=I.Spritesheet[I.ti];//current spritesheet
@@ -280,25 +280,25 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 					}
 				}
 			};
-			I.PlayAnimation=function(ti,f,r){//Play anim: set current anim/frame, r=force reset frame timer
+			I.playAnimation=function(ti,f,r){//Play anim: set current anim/frame, r=force reset frame timer
 				I.f=isNaN(f)?I.f||0:f;// f||I.f||0;
 				if(ti!=I.ti||r){_ft=0;I.f=f||0;}//reset timer if animation has changed or the reset is forced
 				I.ti=ti;
 			};
-			I.ToggleAnimation=function(){_ft=_ft<0?0:-1;};//Toggle Animation: switches between playing and stopped
-			I.Size=function(){//get sprite size
+			I.toggleAnimation=function(){_ft=_ft<0?0:-1;};//Toggle Animation: switches between playing and stopped
+			I.size=function(){//get sprite size
 				return os(I.Spritesheet[I.ti][0]);
 			};
-			I.Init(x,y,s,ti,o);//initialize
+			I.init(x,y,s,ti,o);//initialize
 		};
 		//text: x, y, texture atlas index, text, options
 		//options: mw - max line width (in characters), c - cipher string, al - alpha, sc - scale
 		N.Text=function Text(x,y,ti,t,o){
 			var I=this,oi,os,cphr;
 			_Gameobject.call(I,x,y,o);//inherit from GameObject
-			oi=I.Init;//preserve reference to old init function
-			os=I.Size;//preserve reference to old size function
-			I.Init=function(x,y,ti,t,o) {
+			oi=I.init;//preserve reference to old init function
+			os=I.size;//preserve reference to old size function
+			I.init=function(x,y,ti,t,o) {
 				o=oi(x,y,o);//call parent initializer
 				I.ti=ti;//texture atlas index (for character set)
 				I.t=t;//"text" string (can be character string or array of indexes)
@@ -312,13 +312,13 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 				}
 				return o;//invie overloading
 			};
-			I.Draw=function(dt, df){//draw: deltatime, draw function
+			I.draw=function(dt, df){//draw: deltatime, draw function
 				var i,x,y,
-				atlasRow=N.TextureAtlases[I.ti],//get texture atlas row
+				atlasRow=N.textureAtlases[I.ti],//get texture atlas row
 				//shorthand
 				t=I.t,
 				w=I.mw,
-				odm=I.Size();//get overall dimensions
+				odm=I.size();//get overall dimensions
 				if(!Array.isArray(t)){//assume that if t isn't an array, it must be a valid string
 					t=[];//convert the string to an array using the cipher
 					for(i=0;i<I.t.length;i++){
@@ -339,7 +339,7 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 					df(I.x+x,I.y+y,I.ti,t[i],{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});//draw characters
 				}
 			};
-			I.Size=function(){//get sprite size
+			I.size=function(){//get sprite size
 				var tileSize=os(I.ti),//get size of tiles
 				w=tileSize[0],h=tileSize[1],//shorthand into width and height
 				ln=I.t.length;//text length shorthand
@@ -347,6 +347,6 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 				return [(I.mw?w*Math.min(ln,I.mw):w*ln)*I.sc,
 					(I.mw?h*Math.ceil(ln/I.mw):h)*I.sc];
 			};
-			I.Init(x,y,ti,t,o);//initialize
+			I.init(x,y,ti,t,o);//initialize
 		};
 	};
