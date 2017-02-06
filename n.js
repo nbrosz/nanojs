@@ -1,5 +1,5 @@
-//canvas id, width, height, game class, texture atlas image, texture atlas, framerate, game scale, anti-alias?
-var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerate,gameScale,antiAliased){ //_ implies important hidden members
+//canvas id, width, height, game class, texture atlas image, texture atlas, framerate, game scale, anti-alias?, locked?
+var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerate,gameScale,antiAliased,controlLocked){ //_ implies important hidden members
 		var N=this,
 		__=undefined,//shorthand
 		gameScene,//current game scene (prototype)
@@ -12,7 +12,7 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 		canvasContext=canvas.getContext("2d"),//context
 		doc=document,
 		_atlasImages=[],//atlas image array
-		_controlLocked=1,//user is locked to control game
+		_controlLocked=controlLocked==__||controlLocked,//user is locked to control game
 		_loadedImages=0,//number of loaded images
 		smoothingPostfix="mageSmoothingEnabled",//postfix for smoothing property
 		//private functions
