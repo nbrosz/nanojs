@@ -291,40 +291,57 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 			};
 			I.init(x,y,s,ti,o);//initialize
 		};
-		//text: x, y, texture atlas index, text, options
+		//tile map: x, y, tile atlas, tile data, options
 		//options: mw - max line width (in characters), c - cipher string, al - alpha, sc - scale
-		N.Text=function Text(x,y,ti,t,o){
-			var I=this,oi,os,cphr;
+		N.Map=function (x,y,tileAtlas,data,o){
+			var I=this,oi,os,cphr,tileData,tileLookup,
+			getDataIndex=function(x, y, coarse){
+				var size = I.size(), tileSz = I.tileSize(), flr = Math.floor;
+				if(!coarse){ // convert fine coordinates to coarse
+					if(x<I.x||x>I.x+size[0]||y<I.y||y>I.y+size[1])
+						return __; // out of bounds
+
+					x = flr((x - I.x) / tileSz[0]);
+					y = flr((y - I.y) / tileSz[1]);
+				}
+				return y * I.mw + x; // return index to 1d data array
+			};
 			_Gameobject.call(I,x,y,o);//inherit from GameObject
 			oi=I.init;//preserve reference to old init function
 			os=I.size;//preserve reference to old size function
-			I.init=function(x,y,ti,t,o) {
+			I.init=function(x,y,tileAtlas,data,o) {
 				o=oi(x,y,o);//call parent initializer
-				I.ti=ti;//texture atlas index (for character set)
-				I.t=t;//"text" string (can be character string or array of indexes)
-				I.mw=o.mw||0;//max line width (in characters)
-
-				if(o.c){
-					cphr={};//initialize cipher object
-					for(var i=0;i<o.c.length;i++){
-						cphr[o.c.charAt(i)]=i;//create mapping from character to index
+				if (data) {
+					var i, j;
+					tileLookup=[];
+					// fill tileLookup with mappings to correct texture atlas index and tile data for each tile
+					if (tileAtlas != __) {
+						for(i = 0; i < tileAtlas.length; i++) {
+							for(j = 0; j < tileAtlas[i][1]; j++) {
+								tileLookup.push([tileAtlas[i][0], tileAtlas[i][2]]);
+							}
+						}
 					}
+					I.mw=o.mw||0;//max line width (in characters)
+
+					if(o.c){
+						cphr={};//initialize cipher object
+						for(var i=0;i<o.c.length;i++){
+							cphr[o.c.charAt(i)]=i;//create mapping from character to index
+						}
+					}
+
+					I.set(data);
 				}
 				return o;//invie overloading
 			};
 			I.draw=function(dt, df){//draw: deltatime, draw function
 				var i,x,y,
-				atlasRow=N.textureAtlases[I.ti],//get texture atlas row
+				atlasRow=N.textureAtlases[tileLookup[0][0]],//get first tile atlas texture row
 				//shorthand
-				t=I.t,
+				t=tileData,
 				w=I.mw,
 				odm=I.size();//get overall dimensions
-				if(!Array.isArray(t)){//assume that if t isn't an array, it must be a valid string
-					t=[];//convert the string to an array using the cipher
-					for(i=0;i<I.t.length;i++){
-						t.push(cphr[I.t.charAt(i)]);//get number for character from cipher and push to array
-					}
-				}
 
 				for(i=0;i<t.length;i++){
 					x=i;
@@ -336,17 +353,38 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 					//multiply indexes by offset amount
 					x*=atlasRow[4]*I.sc;
 					y*=atlasRow[5]*I.sc;
-					df(I.x+x,I.y+y,I.ti,t[i],{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});//draw characters
+					df(I.x+x,I.y+y,tileLookup[t[i]][0],t[i],{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});//draw characters
 				}
 			};
 			I.size=function(){//get sprite size
-				var tileSize=os(I.ti),//get size of tiles
-				w=tileSize[0],h=tileSize[1],//shorthand into width and height
-				ln=I.t.length;//text length shorthand
+				var tileSz=I.tileSize(),//get size of tiles (from first tile/texture atlas entry)
+				w=tileSz[0],h=tileSz[1],//shorthand into width and height
+				ln=tileData.length;//text length shorthand
 				//return tile size multiplied by the width/height in tiles of the text element
 				return [(I.mw?w*Math.min(ln,I.mw):w*ln)*I.sc,
 					(I.mw?h*Math.ceil(ln/I.mw):h)*I.sc];
 			};
-			I.init(x,y,ti,t,o);//initialize
+			I.tileSize=function(){
+				return os(tileLookup[0][0]);
+			};
+			I.set=function(data){
+				if(!Array.isArray(data)){//assume that if data isn't an array, it must be a valid string
+					tileData=[];//convert the string to an array using the cipher
+					for(i=0;i<data.length;i++){
+						tileData.push(cphr[data.charAt(i)]);//get number for character from cipher and push to array
+					}
+				} else {
+					tileData = data.slice();
+				}
+			}
+			I.peek=function(x, y, coarse){
+				// return tile at x/y coordinates
+				return tileData[getDataIndex(x, y, coarse)];
+			}
+			I.poke=function(x, y, value, coarse) {
+				// set tile at x/y coordinates
+				tileData[getDataIndex(x, y, coarse)] = isNaN(value) ? cphr[value.charAt(0)] : value;
+			}
+			I.init(x,y,tileAtlas,data,o);//initialize
 		};
 	};
