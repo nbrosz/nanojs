@@ -311,52 +311,54 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 			os=I.size;//preserve reference to old size function
 			I.init=function(x,y,tileAtlas,data,o) {
 				o=oi(x,y,o);//call parent initializer
-				if (data) {
-					var i, j;
-					tileLookup=[];
-					// fill tileLookup with mappings to correct texture atlas index and tile data for each tile
-					if (tileAtlas != __) {
-						for(i = 0; i < tileAtlas.length; i++) {
-							for(j = 0; j < tileAtlas[i][1]; j++) {
-								tileLookup.push([tileAtlas[i][0], tileAtlas[i][2]]);
-							}
+				var i, j;
+				tileLookup=[];
+				// fill tileLookup with mappings to correct texture atlas index and tile data for each tile
+				if (tileAtlas != __) {
+					for(i = 0; i < tileAtlas.length; i++) {
+						for(j = 0; j < tileAtlas[i][1]; j++) {
+							tileLookup.push([tileAtlas[i][0], tileAtlas[i][2]]);
 						}
 					}
-					I.mw=o.mw||0;//max line width (in characters)
-
-					if(o.c){
-						cphr={};//initialize cipher object
-						for(var i=0;i<o.c.length;i++){
-							cphr[o.c.charAt(i)]=i;//create mapping from character to index
-						}
-					}
-
-					I.set(data);
 				}
+				I.mw=o.mw||0;//max line width (in characters)
+
+				if(o.c){
+					cphr={"\n":-1};//initialize cipher object with line break
+					for(var i=0;i<o.c.length;i++){
+						cphr[o.c.charAt(i)]=i;//create mapping from character to index
+					}
+				}
+
+				I.set(data);
 				return o;//invie overloading
 			};
 			I.draw=function(dt, df){//draw: deltatime, draw function
-				var i,x,y,
-				atlasRow=N.textureAtlases[tileLookup[0][0]],//get first tile atlas texture row
-				//shorthand
-				t=tileData,
-				w=I.mw,
-				odm=I.size();//get overall dimensions
+				if (tileLookup&&tileData) {
+					var i,x=0,y=0,dataTile,
+					atlasRow=N.textureAtlases[tileLookup[0][0]],//get first tile atlas texture row
+					//shorthand
+					t=tileData,
+					w=I.mw,
+					odm=I.size();//get overall dimensions
 
-				for(i=0;i<t.length;i++){
-					x=i;
-					y=0;
-					if(w){//if a max width is defined
-						x=x%w;//limit to maximum width (in characters)
-						y=~~(i/w);//increase to as many lines as necessary
+					for(i=0;i<t.length;i++){
+						dataTile=t[i];
+						if(dataTile<0||(w&&x>=w)){//if new line or max width is reached, do a line break
+							x=0;
+							y++;
+							if (dataTile<0) continue; // don't draw tile for new line break
+						}
+						//draw character
+						df(I.x+x*atlasRow[4]*I.sc,I.y+y*atlasRow[5]*I.sc, //multiply indexes by offset amount
+							tileLookup[dataTile][0],dataTile,
+							{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});
+						x++; // increment after draw
 					}
-					//multiply indexes by offset amount
-					x*=atlasRow[4]*I.sc;
-					y*=atlasRow[5]*I.sc;
-					df(I.x+x,I.y+y,tileLookup[t[i]][0],t[i],{al:I.al,sc:I.sc,ox:I.ox,oy:I.oy,ow:odm[0],oh:odm[1]});//draw characters
 				}
 			};
 			I.size=function(){//get sprite size
+				if (!tileData) return 0;
 				var tileSz=I.tileSize(),//get size of tiles (from first tile/texture atlas entry)
 				w=tileSz[0],h=tileSz[1],//shorthand into width and height
 				ln=tileData.length;//text length shorthand
@@ -368,6 +370,8 @@ var Njs=function(id,canvasWidth,canvasHeight,textureUrls,textureAtlases,framerat
 				return os(tileLookup[0][0]);
 			};
 			I.set=function(data){
+				if (!data) return;
+
 				if(!Array.isArray(data)){//assume that if data isn't an array, it must be a valid string
 					tileData=[];//convert the string to an array using the cipher
 					for(i=0;i<data.length;i++){
